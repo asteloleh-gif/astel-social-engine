@@ -19,6 +19,10 @@ function createCommunityRuntime({
   maxMemoryMessages = 8,
   maxMemoryTokens = 1000,
   namespace,
+  personaContextProvider,
+  conversationKeyForEvent,
+  onDraft,
+  sanitizeErrors = false,
 } = {}) {
   if (!provider?.account) throw new Error("Community runtime requires provider account");
   if (!policy) throw new Error("Community runtime requires policy");
@@ -39,13 +43,15 @@ function createCommunityRuntime({
     redisUrl,
     policy,
     namespace: safetyNamespace,
+    redactErrors: sanitizeErrors,
   });
   const humanLocks = createHumanLockStore({
     redisUrl,
     namespace: safetyNamespace,
+    redactErrors: sanitizeErrors,
     ttlSeconds: policy.conversationResetHours * 60 * 60,
   });
-  const getPersonaContext = createPersonaMemoryContextProvider({ env: process.env });
+  const getPersonaContext = personaContextProvider || createPersonaMemoryContextProvider({ env: process.env });
   // Immediate in-process quarantine closes the gap between a confirmed external
   // mutation and Redis/durable bookkeeping. Durable/Redis markers cover restarts.
   const confirmedBotReplyIds = new Set();
@@ -133,6 +139,7 @@ function createCommunityRuntime({
         ownerUsername: account.username,
         ownerUserId: account.userId,
         lookupEnabled: policy.parentLookupEnabled,
+        sanitizeErrors,
       });
     } catch (_) {
       return { status: "ignored", reason: "SAFETY_STORE_UNAVAILABLE" };
@@ -179,7 +186,9 @@ function createCommunityRuntime({
 
     // This is a conversation key, never a synthetic Facebook person identity.
     const userKey = authorlessFacebook ? `facebook:branch:${branchKey}` : safety.getUserKey({ authorId, authorUsername: author });
-    const conversationKey = safety.getConversationKey({ userKey, rootId });
+    const conversationKey = conversationKeyForEvent
+      ? conversationKeyForEvent(c, { userKey, rootId })
+      : safety.getConversationKey({ userKey, rootId });
     if (!conversationKey) return { status: "ignored", reason: "INVALID_CONVERSATION" };
 
     let reservation;
@@ -249,8 +258,13 @@ function createCommunityRuntime({
       if (safety.isDryRun()) {
         // Keep dry-run idempotency/dedupe, but its isolated Redis namespace means
         // simulated successes can never consume the live reply/global budget.
-        await safety.commitSuccess(reservation, null, null);
-        return { status: "dry-run", reason: "WOULD_REPLY" };
+        // Optional durable draft projection must succeed before consuming dedupe.
+        if (onDraft) await onDraft({ event: c, replyText, generated, reservation });
+        const committed = await safety.commitSuccess(reservation, null, null);
+        if (onDraft && !committed) throw new Error("DRAFT_STATE_COMMIT_REJECTED");
+        return onDraft ? { status: "dry-run", reason: "WOULD_REPLY", replyText,
+          model: generated?.model || null, usage: generated?.usage || null }
+          : { status: "dry-run", reason: "WOULD_REPLY" };
       }
 
       if (!(await safety.verifyBranchLease(branchKey, leaseToken))) {
@@ -350,7 +364,7 @@ function createCommunityRuntime({
         return { status: "ambiguous", reason: "PUBLISH_STATE_OUTCOME_UNKNOWN" };
       }
       try { await safety.rollback(reservation); } catch (_) {}
-      return { status: "ignored", reason: "COMMENT_PREPARATION_ERROR", error: error?.message || String(error) };
+      return { status: "ignored", reason: "COMMENT_PREPARATION_ERROR", error: sanitizeErrors ? "COMMENT_PREPARATION_FAILED" : (error?.message || String(error)) };
     } finally {
       try { await safety.releaseBranchLease(branchKey, leaseToken); } catch (_) {}
     }

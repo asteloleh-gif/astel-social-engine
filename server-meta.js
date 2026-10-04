@@ -13,6 +13,7 @@ const legacy = require("./server");
 const { createMetaWebhookRouter } = require("./app/webhooks/metaWebhookRouter");
 const { createMetaWebhookSignature, captureMetaRawBody } = require("./app/webhooks/metaWebhookSignature");
 const { createCommunityRuntime } = require("./app/community/createCommunityRuntime");
+const { createYouTubeCommunityRuntime } = require("./app/community/createYouTubeCommunityRuntime");
 const { createPlatformReplyGenerator } = require("./app/community/createPlatformReplyGenerator");
 const { createPublishRepository } = require("./app/publishing/publishRepository");
 const { createDurablePublishRepository } = require("./app/publishing/durablePublishRepository");
@@ -86,6 +87,16 @@ async function persistDurable(label, fn) {
 
 for (const provider of legacy.socialContext.providers.list()) {
   if (provider.platform === "threads") continue;
+  if (provider.platform === "youtube") {
+    secondaryCommunity.set(provider.accountKey, createYouTubeCommunityRuntime({
+      provider, redisUrl: REDIS_URL, policy: legacy.policy, durable,
+      generateReply: platformReplyGenerator,
+      // No Meta KB fallback: approved ASAP context is injected separately when available.
+      getContext: async () => "",
+      mode: process.env.YOUTUBE_REPLY_MODE || "DRAFT_ONLY",
+    }));
+    continue;
+  }
   const runtime = createCommunityRuntime({
     provider,
     redisUrl: REDIS_URL,
@@ -186,6 +197,10 @@ async function handleThreadsWebhook({ native, event }) {
 }
 
 async function handleSecondaryWebhook({ platform, provider, event }) {
+  if (platform === "youtube") {
+    const runtime = secondaryCommunity.get(provider.accountKey);
+    return runtime ? runtime.handleComment(event) : { status: "ignored", reason: "COMMUNITY_RUNTIME_MISSING" };
+  }
   const persisted = await persistDurable(`${platform}-comment`, () => durable.recordSocialEvent(event));
   if (!persisted && postgresStore.isRequired()) {
     return { status: "ignored", reason: "DURABLE_STORE_UNAVAILABLE" };

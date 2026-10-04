@@ -5,6 +5,7 @@ async function resolveParentForRouting(c, {
   ownerUserId,
   lookupEnabled = true,
   graphRoutingEnabled = false,
+  sanitizeErrors = false,
 } = {}) {
   if (!safety || !threads) throw new Error("parent resolver requires safety and threads dependencies");
 
@@ -19,7 +20,7 @@ async function resolveParentForRouting(c, {
       parentAuthorUsername: ownerUsername || null,
       source: "redis-bot-id",
     };
-    await recordGraphShadow(c, parent, { safety, threads, ownerUsername, ownerUserId });
+    await recordGraphShadow(c, parent, { safety, threads, ownerUsername, ownerUserId, sanitizeErrors });
     return parent;
   }
 
@@ -36,7 +37,7 @@ async function resolveParentForRouting(c, {
       parentAuthorUsername: ownerUsername || null,
       source: "webhook-target-owner",
     };
-    await recordGraphShadow(c, parent, { safety, threads, ownerUsername, ownerUserId });
+    await recordGraphShadow(c, parent, { safety, threads, ownerUsername, ownerUserId, sanitizeErrors });
     return parent;
   }
 
@@ -52,7 +53,7 @@ async function resolveParentForRouting(c, {
         parentAuthorUsername: node.username || null,
         source: "conversation-graph",
       };
-      await recordGraphShadow(c, parent, { safety, threads, ownerUsername, ownerUserId });
+      await recordGraphShadow(c, parent, { safety, threads, ownerUsername, ownerUserId, sanitizeErrors });
       return parent;
     }
   }
@@ -62,7 +63,7 @@ async function resolveParentForRouting(c, {
     ownerUserId,
     lookupEnabled,
   });
-  await recordGraphShadow(c, parent, { safety, threads, ownerUsername, ownerUserId });
+  await recordGraphShadow(c, parent, { safety, threads, ownerUsername, ownerUserId, sanitizeErrors });
   return parent;
 }
 
@@ -71,6 +72,7 @@ async function recordGraphShadow(c, parent, {
   threads,
   ownerUsername,
   ownerUserId,
+  sanitizeErrors = false,
 }) {
   if (typeof safety.recordGraphNode !== "function") return;
 
@@ -107,7 +109,7 @@ async function recordGraphShadow(c, parent, {
     // Shadow mode must not break the already-working v9.1.1a router.
     console.error("Conversation graph shadow error", JSON.stringify({
       sourceCommentId: String(commentId),
-      error: e?.message || String(e),
+      error: sanitizeErrors ? "GRAPH_SHADOW_ERROR" : (e?.message || String(e)),
     }));
   }
 }

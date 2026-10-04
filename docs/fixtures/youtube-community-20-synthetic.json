@@ -1,0 +1,150 @@
+{
+  "schemaVersion": 1,
+  "sourceType": "SYNTHETIC_TEST_FIXTURES",
+  "notRealYouTubeComments": true,
+  "countsTowardGate3": false,
+  "ownerReviewed": false,
+  "generatedWithLiveModel": false,
+  "records": [
+    {
+      "id": "synthetic-01",
+      "commentText": "What detail caught your eye?",
+      "replyCandidate": "The tiny background details are fun to pick apart. Which one stood out to you?",
+      "mode": "DRAFT_ONLY",
+      "fixture": true
+    },
+    {
+      "id": "synthetic-02",
+      "commentText": "I hope the story gets more attention than Online.",
+      "replyCandidate": "A strong story would be a great place to start.",
+      "mode": "DRAFT_ONLY",
+      "fixture": true
+    },
+    {
+      "id": "synthetic-03",
+      "commentText": "This trailer has my wallet sweating haha",
+      "replyCandidate": "The wallet is already asking for a cooldown 😅",
+      "mode": "DRAFT_ONLY",
+      "fixture": true
+    },
+    {
+      "id": "synthetic-04",
+      "commentText": "Great breakdown, I missed that detail!",
+      "replyCandidate": "That little detail is easy to miss on the first watch.",
+      "mode": "DRAFT_ONLY",
+      "fixture": true
+    },
+    {
+      "id": "synthetic-05",
+      "commentText": "The music is too loud in this one.",
+      "replyCandidate": "Fair point, it makes the voice harder to follow.",
+      "mode": "DRAFT_ONLY",
+      "fixture": true
+    },
+    {
+      "id": "synthetic-06",
+      "commentText": "Make a video about the background details.",
+      "replyCandidate": "That could make a good breakdown. Which scene should we look at first?",
+      "mode": "DRAFT_ONLY",
+      "fixture": true
+    },
+    {
+      "id": "synthetic-07",
+      "commentText": "Do we actually know what this means?",
+      "replyCandidate": "I’d keep this in the theory pile until there’s official confirmation.",
+      "mode": "DRAFT_ONLY",
+      "fixture": true
+    },
+    {
+      "id": "synthetic-08",
+      "commentText": "I like the way you slowed down this scene.",
+      "replyCandidate": "It gives the small details a little room to breathe.",
+      "mode": "DRAFT_ONLY",
+      "fixture": true
+    },
+    {
+      "id": "synthetic-09",
+      "commentText": "My pause button deserves an award haha",
+      "replyCandidate": "It’s doing the real detective work 😂",
+      "mode": "DRAFT_ONLY",
+      "fixture": true
+    },
+    {
+      "id": "synthetic-10",
+      "commentText": "Awesome edit, the pacing is great.",
+      "replyCandidate": "Glad the pacing worked for you.",
+      "mode": "DRAFT_ONLY",
+      "fixture": true
+    },
+    {
+      "id": "synthetic-11",
+      "commentText": "Слишком громкая музыка, голос почти не слышно.",
+      "replyCandidate": "Да, музыка здесь мешает голосу. Замечание по делу.",
+      "mode": "DRAFT_ONLY",
+      "fixture": true
+    },
+    {
+      "id": "synthetic-12",
+      "commentText": "Как думаешь, это точно важная деталь?",
+      "replyCandidate": "Пока это скорее повод для теории. Без подтверждения я бы выводов не делал.",
+      "mode": "DRAFT_ONLY",
+      "fixture": true
+    },
+    {
+      "id": "synthetic-13",
+      "commentText": "Мне нравится такой спокойный разбор трейлера.",
+      "replyCandidate": "Так проще рассмотреть мелочи и не потерять саму сцену.",
+      "mode": "DRAFT_ONLY",
+      "fixture": true
+    },
+    {
+      "id": "synthetic-14",
+      "commentText": "Я этот трейлер уже по пикселям знаю ахаха",
+      "replyCandidate": "Пиксели уже начинают узнавать тебя 😂",
+      "mode": "DRAFT_ONLY",
+      "fixture": true
+    },
+    {
+      "id": "synthetic-15",
+      "commentText": "Круто, я вообще не заметил этот момент.",
+      "replyCandidate": "На первом просмотре взгляд легко уходит в другую сторону.",
+      "mode": "DRAFT_ONLY",
+      "fixture": true
+    },
+    {
+      "id": "synthetic-16",
+      "commentText": "Зроби відео про деталі на задньому плані.",
+      "replyCandidate": "З цього може вийти цікавий розбір. Яку сцену дивимося першою?",
+      "mode": "DRAFT_ONLY",
+      "fixture": true
+    },
+    {
+      "id": "synthetic-17",
+      "commentText": "Що тебе найбільше здивувало в цій сцені?",
+      "replyCandidate": "Тут цікаво придивитися до фону. Яка деталь зачепила тебе?",
+      "mode": "DRAFT_ONLY",
+      "fixture": true
+    },
+    {
+      "id": "synthetic-18",
+      "commentText": "Дуже гарний монтаж, дивитися приємно.",
+      "replyCandidate": "Приємно, що такий темп тобі зайшов.",
+      "mode": "DRAFT_ONLY",
+      "fixture": true
+    },
+    {
+      "id": "synthetic-19",
+      "commentText": "字幕可以再大一点吗？",
+      "replyCandidate": "这个建议很实用，手机上确实需要看得更清楚。",
+      "mode": "DRAFT_ONLY",
+      "fixture": true
+    },
+    {
+      "id": "synthetic-20",
+      "commentText": "¿Esto ya está confirmado oficialmente?",
+      "replyCandidate": "Por ahora lo trataría como una teoría, hasta que haya una confirmación oficial.",
+      "mode": "DRAFT_ONLY",
+      "fixture": true
+    }
+  ]
+}

@@ -1,4 +1,4 @@
-const SUPPORTED_PLATFORMS = Object.freeze(["threads", "instagram", "facebook"]);
+const SUPPORTED_PLATFORMS = Object.freeze(["threads", "instagram", "facebook", "youtube"]);
 
 function normalize(value) {
   return String(value || "").trim();
@@ -38,7 +38,7 @@ function createAccountConfig(input = {}) {
     authMode: normalize(input.authMode).toLowerCase() || null,
     linkedPageAccessToken: normalize(input.linkedPageAccessToken) || null,
     enabled: input.enabled !== false,
-    dryRun: input.dryRun !== false,
+    dryRun: platform === "youtube" ? true : input.dryRun !== false,
   });
 }
 
@@ -87,6 +87,18 @@ function optionalPlatformAccount(env, platform) {
   });
 }
 
+// YouTube is a separately pinned ASAP account, never a fallback Meta identity.
+function loadYouTubeAccount(env = process.env) {
+  if (!["YOUTUBE_ENABLED", "YOUTUBE_CHANNEL_ID", "YOUTUBE_USERNAME", "YOUTUBE_CLIENT_ID", "YOUTUBE_REFRESH_TOKEN"]
+    .some(name => normalize(env[name]) && env[name] !== "false")) return null;
+  return createAccountConfig({
+    key: "asap-gta6:youtube", brand: "asap-gta6", platform: "youtube",
+    username: env.YOUTUBE_USERNAME || "ASAP GTA6", userId: env.YOUTUBE_CHANNEL_ID,
+    language: "auto", enabled: bool(env.YOUTUBE_ENABLED, false) && normalize(env.YOUTUBE_REPLY_MODE).toUpperCase() !== "OFF", dryRun: true,
+    authMode: "youtube-oauth",
+  });
+}
+
 function loadSocialAccounts(env = process.env) {
   const accounts = [loadPrimaryAccount(env)];
   for (const platform of ["instagram", "facebook"]) {
@@ -97,6 +109,8 @@ function loadSocialAccounts(env = process.env) {
     const brand = normalize(env.SOCIAL_BRAND).toLowerCase();
     if (!brand || accounts.some(account => account.brand !== brand)) throw new Error("SOCIAL_BRAND_ISOLATION_REQUIRED");
   }
+  const youtube = loadYouTubeAccount(env);
+  if (youtube) accounts.push(youtube);
   return Object.freeze(accounts);
 }
 
@@ -120,5 +134,6 @@ module.exports = {
   createAccountConfig,
   loadPrimaryAccount,
   loadSocialAccounts,
+  loadYouTubeAccount,
   publicAccountView,
 };

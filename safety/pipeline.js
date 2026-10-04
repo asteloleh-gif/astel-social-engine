@@ -11,6 +11,7 @@ function createSafetyPipeline({
   redisUrl = process.env.REDIS_URL,
   policy,
   namespace = "astel:v91",
+  redactErrors = false,
 }) {
   const p = policy || { normalReplyLimit: 3, cooldownSeconds: 20, conversationResetHours: 24, globalDailyLimit: 50, redisRequired: true };
   const CONVERSATION_WINDOW_MS = p.conversationResetHours * 60 * 60 * 1000;
@@ -44,7 +45,7 @@ function createSafetyPipeline({
   async function init() {
     if (!redisUrl) { lastError = "REDIS_URL missing"; if (p.redisRequired) throw new Error(lastError); return false; }
     client = createClient({ url: redisUrl });
-    client.on("error", err => { ready = false; lastError = err?.message || String(err); console.error("Redis error:", lastError); });
+    client.on("error", err => { ready = false; lastError = redactErrors ? "REDIS_SAFETY_ERROR" : (err?.message || String(err)); console.error("Redis error:", lastError); });
     client.on("ready", () => { ready = true; lastError = null; });
     client.on("end", () => { ready = false; });
     await client.connect(); await client.ping(); ready = true;
@@ -233,7 +234,7 @@ return 1
           publishStatus: "PUBLISHED", publishConfirmedAt: new Date(now).toISOString(),
         });
       } catch (e) {
-        console.error("Conversation graph publish projection error", JSON.stringify({ sourceCommentId: String(reservation.commentId), replyId: String(publishedReplyId), error: e?.message || String(e) }));
+        console.error("Conversation graph publish projection error", JSON.stringify({ sourceCommentId: String(reservation.commentId), replyId: String(publishedReplyId), error: redactErrors ? "REDIS_GRAPH_PROJECTION_ERROR" : (e?.message || String(e)) }));
       }
     }
     return committed;

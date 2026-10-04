@@ -1,6 +1,6 @@
 const { createClient } = require("redis");
 
-function createHumanLockStore({ redisUrl = process.env.REDIS_URL, namespace = "astel:v91", ttlSeconds = 24 * 60 * 60 } = {}) {
+function createHumanLockStore({ redisUrl = process.env.REDIS_URL, namespace = "astel:v91", ttlSeconds = 24 * 60 * 60, redactErrors = false } = {}) {
   let client = null;
   let ready = false;
   let lastError = null;
@@ -10,7 +10,7 @@ function createHumanLockStore({ redisUrl = process.env.REDIS_URL, namespace = "a
   async function init() {
     if (!redisUrl) throw new Error("REDIS_URL missing for human lock store");
     client = createClient({ url: redisUrl });
-    client.on("error", err => { ready = false; lastError = err?.message || String(err); });
+    client.on("error", err => { ready = false; lastError = redactErrors ? "REDIS_HUMAN_LOCK_ERROR" : (err?.message || String(err)); });
     client.on("ready", () => { ready = true; lastError = null; });
     client.on("end", () => { ready = false; });
     await client.connect();
