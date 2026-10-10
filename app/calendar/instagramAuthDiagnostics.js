@@ -34,12 +34,13 @@ function safeGraphError(result, secrets = []) {
 }
 
 // Read-only, startup-only investigation. Do not select/change a credential here.
-// Both candidates are already configured for this one owned Instagram account.
-async function diagnoseInstagramPublishing({ account, apiVersion, fetchImpl = fetch } = {}) {
+// Only credentials already configured for this owned Instagram account are read.
+async function diagnoseInstagramPublishing({ account, apiVersion, publishingAccessToken, fetchImpl = fetch } = {}) {
   if (account?.username !== 'astel.us' || account?.platform !== 'instagram' ||
       account?.authMode !== 'facebook_login' || !/^\d+$/.test(String(account?.userId || '')) ||
       !/^v\d+\.\d+$/.test(apiVersion || '')) return { status: 'skipped', reason: 'DIAGNOSTIC_SCOPE_MISMATCH' };
   const candidates = [
+    { source: 'calendar_instagram_token', token: publishingAccessToken },
     { source: 'configured_linked_page_token', token: account.linkedPageAccessToken },
     { source: 'configured_instagram_token', token: account.accessToken },
   ].filter(c => typeof c.token === 'string' && c.token);

@@ -6,6 +6,7 @@ const { createCalendarMetaPublisher }=require('./metaPublisher');
 const { DEFAULT_API_VERSION }=require('../../adapters/instagramAdapter');
 const { errorCode }=require('./contract');
 const { diagnoseInstagramPublishing }=require('./instagramAuthDiagnostics');
+const { instagramPublishingAuth }=require('./instagramPublishingAuth');
 const yes=x=>String(x||'').toLowerCase()==='true';
 
 function createPublicationCalendar({ env=process.env, store, socialContext, logger=console }={}) {
@@ -21,6 +22,7 @@ function createPublicationCalendar({ env=process.env, store, socialContext, logg
     if(readiness['astel.us:instagram']?.status==='failed') {
       const source=socialContext.providers.list().find(p=>p.accountKey==='astel.us:instagram');
       const diagnostics=await diagnoseInstagramPublishing({account:source?.account,
+        publishingAccessToken:env.CALENDAR_INSTAGRAM_ACCESS_TOKEN,
         apiVersion:source?.health?.().apiVersion||DEFAULT_API_VERSION});
       readiness['astel.us:instagram'].diagnostics=diagnostics;
       logger.log('Instagram publishing authorization diagnostics',JSON.stringify(diagnostics));
@@ -41,12 +43,10 @@ function createPublicationCalendar({ env=process.env, store, socialContext, logg
           token:source.tokenManager?.getToken?.()||account.accessToken,
           baseUrl:'https://graph.threads.net',apiVersion:'v1.0'});
         else {
-          // Reuse the same already configured Instagram-linked Page credential, in isolation.
-          // The publisher performs an exact IG ID + username check before every mutation.
-          const facebookLogin=account.authMode==='facebook_login';
-          getAuth=async()=>({status:'ok',userId:account.userId,
-            token:facebookLogin?(account.linkedPageAccessToken||account.accessToken):account.accessToken,
-            baseUrl:facebookLogin?'https://graph.facebook.com':'https://graph.instagram.com',
+          // Optional publication-only credential; community tokens remain unchanged.
+          // Exact IG identity and quota are still checked before each mutation.
+          getAuth=async()=>instagramPublishingAuth({account,
+            publishingAccessToken:env.CALENDAR_INSTAGRAM_ACCESS_TOKEN,
             apiVersion:source.health?.().apiVersion||DEFAULT_API_VERSION});
         }
         const publisher=createCalendarMetaPublisher({platform,account,getAuth});
