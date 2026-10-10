@@ -31,6 +31,16 @@ const {
 
 base.app.use(createPublicLegalRouter());
 
+// Publication scheduling is isolated from all existing comment auto-reply flags and stores.
+const { createPublicationCalendar } = require("./app/calendar/runtime");
+const publicationCalendar = createPublicationCalendar({ store: base.postgresStore, socialContext: legacy.socialContext });
+base.app.get("/health/publication-calendar", (_req, res) => {
+  const status = publicationCalendar.health();
+  const ok = !status.enabled || (status.initialized && status.repository?.connected && !status.lastError);
+  res.status(ok ? 200 : 503).json({ ok, calendar: status });
+});
+
+
 const instagramPollers = legacy.socialContext.providers.list()
   .filter(provider => provider.platform === "instagram")
   .map(provider => createInstagramCommentPoller({
@@ -102,6 +112,11 @@ async function start() {
   const threadsPollingStart = [];
   for (const poller of threadsPollers) threadsPollingStart.push(await poller.init());
   console.log("Threads polling startup", JSON.stringify(threadsPollingStart));
+
+  // Do not make an optional calendar outage shut down working comment auto-replies.
+  publicationCalendar.start().then(result => console.log("Publication calendar startup", JSON.stringify(result)))
+    .catch(() => console.error("Publication calendar startup failed"));
+
 }
 
 if (require.main === module) {
@@ -117,4 +132,5 @@ module.exports = {
   instagramPollers,
   facebookPollers,
   threadsPollers,
+  publicationCalendar,
 };

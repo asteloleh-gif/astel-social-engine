@@ -10,6 +10,8 @@ function createPublishEngine({
   batchSize = 5,
   leaseMs = 60_000,
   now = () => new Date(),
+  beforeProcess = null,
+  beforeMutation = null,
   setIntervalImpl = setInterval,
   clearIntervalImpl = clearInterval,
 } = {}) {
@@ -79,7 +81,15 @@ function createPublishEngine({
       return { id, status: "failed", reason: "PROVIDER_NOT_CONFIGURED" };
     }
 
-    if (dryRun || provider.account?.dryRun === true) {
+    if (beforeProcess) {
+      try { await beforeProcess(job); }
+      catch (error) {
+        const reason = /^[A-Z0-9_]+$/.test(error?.message || "") ? error.message : "PUBLISH_PRECHECK_REJECTED";
+        await repository.finish(id, claimToken, PUBLISH_STATUS.FAILED, { errorCode: reason, now: now() });
+        return { id, status: "failed", reason };
+      }
+    }
+    if (dryRun || provider.account?.dryRun === true || job.metadata?.deliveryMode === "Simulation") {
       const result = { wouldPublish: true, platform: provider.platform, contentType: job.content?.type || null };
       const committed = await repository.finish(id, claimToken, PUBLISH_STATUS.SIMULATED, { result, now: now() });
       return committed
@@ -93,6 +103,8 @@ function createPublishEngine({
         jobId: job.id,
         scheduledAt: job.scheduledAt,
         metadata: job.metadata,
+        beforeMutation: beforeMutation ? () => beforeMutation(job, claimToken) : undefined,
+        checkpoint: repository.checkpoint ? patch => repository.checkpoint(id, claimToken, patch) : undefined,
       });
     } catch (error) {
       await repository.finish(id, claimToken, PUBLISH_STATUS.AMBIGUOUS_HOLD, {
@@ -105,7 +117,7 @@ function createPublishEngine({
 
     if (publishResult?.status === "published" && publishResult.id) {
       const committed = await repository.finish(id, claimToken, PUBLISH_STATUS.PUBLISHED, {
-        result: { id: String(publishResult.id), platform: provider.platform },
+        result: { ...publishResult, id: String(publishResult.id), platform: provider.platform },
         now: now(),
       });
       return committed

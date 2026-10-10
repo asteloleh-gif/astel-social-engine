@@ -1,4 +1,4 @@
-name: Astel US Content Dry-Run Gate
+name: Astel US Publishing Gate
 
 on:
   push:
@@ -13,20 +13,19 @@ jobs:
   isolated-content-e2e:
     runs-on: ubuntu-latest
     timeout-minutes: 12
-    env:
-      CI: "true"
-      NODE_ENV: "test"
-      CONTENT_PIPELINE_ENABLED: "true"
-      CONTENT_CONTROL_API_ENABLED: "false"
-      PUBLISH_ENGINE_ENABLED: "true"
-      PUBLISH_ENGINE_DRY_RUN: "true"
-      CONTENT_ALLOW_LIVE_SCHEDULING: "false"
-      BOT_ENABLED: "false"
-      INSTAGRAM_ENABLED: "false"
-      FACEBOOK_ENABLED: "false"
-      THREADS_ACCESS_TOKEN: ""
-      INSTAGRAM_ACCESS_TOKEN: ""
-      OPENAI_API_KEY: ""
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_DB: calendar_test
+          POSTGRES_USER: calendar_ci
+          POSTGRES_PASSWORD: local_disposable_test_only
+        ports: [5432:5432]
+        options: >-
+          --health-cmd "pg_isready -U calendar_ci -d calendar_test"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
     steps:
       - uses: actions/checkout@v4
         with:
@@ -36,9 +35,13 @@ jobs:
           node-version: 24.20.0
           cache: npm
       - run: npm ci --ignore-scripts --no-audit --no-fund
-      - name: Test isolated content pipeline
-        run: node --test tests/contentControl.test.js tests/contentControl5E.test.js tests/contentE2E.test.js tests/contentPipeline.test.js tests/contentRuntime.test.js tests/publishEngine.test.js
-      - name: Create reproducible source and dependency test bundle
+      - name: Full regression and real disposable PostgreSQL integration
+        run: |
+          env -i PATH="$PATH" HOME="$HOME" CI=true NODE_ENV=test \
+            CALENDAR_TEST_DATABASE_URL=postgresql://calendar_ci:local_disposable_test_only@127.0.0.1:5432/calendar_test \
+            npm test | tee /tmp/astel-test-results.txt
+        shell: bash --noprofile --norc -eo pipefail {0}
+      - name: Source and dependency test bundle (no credentials or git config)
         if: always()
         run: |
           git archive --format=tar HEAD > /tmp/astel-test-source.tar
@@ -48,5 +51,7 @@ jobs:
         if: always()
         with:
           name: astel-offline-test-bundle
-          path: /tmp/astel-test-source.tar.gz
+          path: |
+            /tmp/astel-test-source.tar.gz
+            /tmp/astel-test-results.txt
           retention-days: 1
