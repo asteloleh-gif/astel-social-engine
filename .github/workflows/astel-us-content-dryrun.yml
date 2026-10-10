@@ -1,0 +1,61 @@
+name: Astel US Publishing Gate
+
+on:
+  push:
+    branches: [feat/astel-us-content-dryrun-20261010]
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  isolated-content-e2e:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_DB: calendar_test
+          POSTGRES_USER: calendar_ci
+          POSTGRES_PASSWORD: local_disposable_test_only
+        ports: [5432:5432]
+        options: >-
+          --health-cmd "pg_isready -U calendar_ci -d calendar_test"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24.20.0
+          cache: npm
+      - run: npm ci --ignore-scripts --no-audit --no-fund
+      - name: Full regression and real disposable PostgreSQL integration
+        run: |
+          env -i PATH="$PATH" HOME="$HOME" CI=true NODE_ENV=test \
+            CALENDAR_TEST_DATABASE_URL=postgresql://calendar_ci:local_disposable_test_only@127.0.0.1:5432/calendar_test \
+            npm test | tee /tmp/astel-test-results.txt
+        shell: bash --noprofile --norc -eo pipefail {0}
+      - name: Build deployable Docker image and verify isolated runtime
+        run: |
+          docker build -t astel-calendar-ci .
+          docker run --rm --network none astel-calendar-ci node -e "const a=require('node:assert/strict');a.equal(process.version,'v24.20.0');const r=require('./server-meta-runtime');a.equal(r.publicationCalendar.health().enabled,false);console.log('Docker runtime verified; no credentials or network')"
+      - name: Source and dependency test bundle (no credentials or git config)
+        if: always()
+        run: |
+          git archive --format=tar HEAD > /tmp/astel-test-source.tar
+          tar -rf /tmp/astel-test-source.tar node_modules
+          gzip /tmp/astel-test-source.tar
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: astel-offline-test-bundle
+          path: |
+            /tmp/astel-test-source.tar.gz
+            /tmp/astel-test-results.txt
+          retention-days: 1
