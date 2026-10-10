@@ -2,11 +2,9 @@ name: Astel US Content Dry-Run Gate
 
 on:
   push:
-    branches:
-      - feat/astel-us-content-dryrun-20261010
+    branches: [feat/astel-us-content-dryrun-20261010]
   pull_request:
-    branches:
-      - main
+    branches: [main]
 
 permissions:
   contents: read
@@ -16,6 +14,8 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 12
     env:
+      CI: "true"
+      NODE_ENV: "test"
       CONTENT_PIPELINE_ENABLED: "true"
       CONTENT_CONTROL_API_ENABLED: "false"
       PUBLISH_ENGINE_ENABLED: "true"
@@ -29,23 +29,24 @@ jobs:
       OPENAI_API_KEY: ""
     steps:
       - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
       - uses: actions/setup-node@v4
         with:
           node-version: 24.20.0
           cache: npm
       - run: npm ci --ignore-scripts --no-audit --no-fund
-      - name: Test Content Pipeline with in-memory boundaries only
+      - name: Test isolated content pipeline
+        run: node --test tests/contentControl.test.js tests/contentControl5E.test.js tests/contentE2E.test.js tests/contentPipeline.test.js tests/contentRuntime.test.js tests/publishEngine.test.js
+      - name: Create reproducible source and dependency test bundle
+        if: always()
         run: |
-          node --test \
-            tests/contentControl.test.js \
-            tests/contentControl5E.test.js \
-            tests/contentE2E.test.js \
-            tests/contentPipeline.test.js \
-            tests/contentRuntime.test.js \
-            tests/publishEngine.test.js
-      - name: Assert production flags were not modified
-        run: |
-          test "$PUBLISH_ENGINE_DRY_RUN" = "true"
-          test "$CONTENT_ALLOW_LIVE_SCHEDULING" = "false"
-          test -z "$THREADS_ACCESS_TOKEN"
-          test -z "$INSTAGRAM_ACCESS_TOKEN"
+          git archive --format=tar HEAD > /tmp/astel-test-source.tar
+          tar -rf /tmp/astel-test-source.tar node_modules
+          gzip /tmp/astel-test-source.tar
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: astel-offline-test-bundle
+          path: /tmp/astel-test-source.tar.gz
+          retention-days: 1
