@@ -2,9 +2,9 @@ name: v9.1 tests
 
 on:
   push:
-    branches: ["v9.1", "main"]
+    branches: ["v9.1", "main", "ru-bot"]
   pull_request:
-    branches: ["main"]
+    branches: ["main", "ru-bot"]
 
 jobs:
   test:
