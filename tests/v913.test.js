@@ -29,6 +29,9 @@ test("v9.1.3 defaults to daily checks and refresh around day 50", () => {
 test("Threads adapter reads the live token for lookup/create/publish", () => {
   assert.match(adapter, /createThreadsTokenManager/);
   assert.match(adapter, /const getAccessToken = \(\) => tokenManager\.getToken\(\) \|\| accessToken/);
-  const calls = adapter.match(/getAccessToken\(\)/g) || [];
-  assert.ok(calls.length >= 3);
+  assert.match(adapter, /createSafeReplyPublisher/);
+  assert.match(adapter, /getAccessToken, userId/);
+  const publisher = fs.readFileSync(path.join(__dirname, "../adapters/threadsReplyPublisher.js"), "utf8");
+  assert.match(publisher, /getAccessToken\(\)/);
+  assert.match(publisher, /Authorization: "Bearer " \+ token/);
 });

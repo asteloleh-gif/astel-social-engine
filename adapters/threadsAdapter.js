@@ -1,5 +1,6 @@
 const fetch = require("node-fetch");
 const { createThreadsTokenManager } = require("../auth/threadsTokenManager");
+const { createSafeReplyPublisher } = require("./threadsReplyPublisher");
 
 const DEFAULT_FETCH_TIMEOUT_MS = 20000;
 
@@ -92,9 +93,9 @@ function createThreadsAdapter({ accessToken, userId }) {
   async function createReply(parentCommentId, message) {
     const token = getAccessToken();
     if (!token || !userId) { console.error("Threads config error: access token or user id missing"); return null; }
-    const createParams = new URLSearchParams({ media_type: "TEXT", text: message, reply_to_id: String(parentCommentId), access_token: token });
+    const createParams = new URLSearchParams({ media_type: "TEXT", text: message, reply_to_id: String(parentCommentId) });
     let createRes;
-    try { createRes = await fetchWithRetry(`https://graph.threads.net/v1.0/me/threads?${createParams}`, { method: "POST" }); }
+    try { createRes = await fetchWithRetry(`https://graph.threads.net/v1.0/me/threads?${createParams}`, { method: "POST", headers: { Authorization: `Bearer ${token}` } }); }
     catch (e) { console.error("Threads container creation network error:", e?.message || String(e)); return null; }
     let createData; try { createData = await createRes.json(); } catch (_) { console.error("Threads container creation error: unparseable response", createRes.status); return null; }
     if (!createRes.ok || createData.error) { console.error("Threads container creation error:", createRes.status, createData?.error?.code || "unknown_error"); return null; }
@@ -103,29 +104,10 @@ function createThreadsAdapter({ accessToken, userId }) {
     console.log("Threads reply container created", JSON.stringify({ id: creationId })); return creationId;
   }
 
+  const safeReplyPublisher = createSafeReplyPublisher({ getAccessToken, userId });
+
   async function publishReply(creationId) {
-    await new Promise(r => setTimeout(r, 5000));
-    const token = getAccessToken();
-    if (!token) return { status: "failed" };
-    const publishParams = new URLSearchParams({ creation_id: String(creationId), access_token: token });
-    let publishRes;
-    try {
-      const url = `https://graph.threads.net/v1.0/${encodeURIComponent(userId)}/threads_publish?${publishParams}`;
-      const opts = { method: "POST", timeout: DEFAULT_FETCH_TIMEOUT_MS };
-      for (let attempt = 1; attempt <= 3; attempt++) {
-        try { publishRes = await fetch(url, opts); }
-        catch (e) { console.error("Threads publish network error (ambiguous outcome):", e?.message || String(e)); return { status: "ambiguous" }; }
-        if (publishRes.status !== 429 && publishRes.status < 500) break;
-        if (attempt < 3) await new Promise(resolve => setTimeout(resolve, 500 * (2 ** (attempt - 1)) + Math.floor(Math.random() * 250)));
-      }
-    } catch (e) { console.error("Threads publish network error (ambiguous outcome):", e?.message || String(e)); return { status: "ambiguous" }; }
-    let publishData;
-    try { publishData = await publishRes.json(); }
-    catch (_) { if (publishRes.ok) return { status: "ambiguous" }; return { status: "failed" }; }
-    if (!publishRes.ok || publishData.error) { console.error("Threads publish error:", publishRes.status, publishData?.error?.code || "unknown_error"); return { status: "failed" }; }
-    const publishedId = publishData.id || null;
-    if (!publishedId) return { status: "ambiguous" };
-    console.log("Threads reply posted", JSON.stringify({ id: publishedId })); return { status: "published", id: publishedId };
+    return safeReplyPublisher.publishReply(creationId);
   }
 
   async function reply(parentCommentId, message) {
