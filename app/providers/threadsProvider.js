@@ -25,6 +25,7 @@ function createThreadsProvider({
     tokenManager: adapter.tokenManager,
     fallbackAccessToken: account.accessToken,
   });
+  const publishReply = (parentId, text) => adapter.reply(parentId, text);
 
   const provider = {
     platform: "threads",
@@ -67,7 +68,7 @@ function createThreadsProvider({
       });
     },
     publishPost: (content, context) => postPublisher.publishPost(content, context),
-    publishReply: (parentId, text) => adapter.reply(parentId, text),
+    publishReply,
     getPostInsights: (postId, options) => insights.getPostInsights(postId, options),
     getAccountInsights: options => insights.getAccountInsights(options),
     listRecentPosts: options => insights.listRecentPosts(options),
@@ -83,11 +84,14 @@ function createThreadsProvider({
 
   // Compatibility surface for the existing real-time Reply Engine. The native
   // adapter methods remain available while cross-platform routing uses the
-  // normalized SocialEvent side channel above.
+  // normalized SocialEvent side channel above. Re-apply publishReply/reply after
+  // copying adapter methods because the adapter also exposes an internal
+  // publishReply(creationId) method with a different contract.
   return Object.assign(provider, adapter, {
     normalizeWebhookEvent: provider.normalizeWebhookEvent,
     publishPost: provider.publishPost,
-    reply: (parentId, text) => provider.publishReply(parentId, text),
+    publishReply,
+    reply: publishReply,
   });
 }
 
