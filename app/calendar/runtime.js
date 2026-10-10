@@ -5,6 +5,7 @@ const { createCalendarWorker }=require('./worker');
 const { createCalendarMetaPublisher }=require('./metaPublisher');
 const { DEFAULT_API_VERSION }=require('../../adapters/instagramAdapter');
 const { errorCode }=require('./contract');
+const { diagnoseInstagramPublishing }=require('./instagramAuthDiagnostics');
 const yes=x=>String(x||'').toLowerCase()==='true';
 
 function createPublicationCalendar({ env=process.env, store, socialContext, logger=console }={}) {
@@ -17,6 +18,13 @@ function createPublicationCalendar({ env=process.env, store, socialContext, logg
     if(!worker)return;
     for(const [key,p] of publishers)readiness[key]=await p.preflight();
     logger.log('Publication calendar read-only preflight',JSON.stringify(readiness));
+    if(readiness['astel.us:instagram']?.status==='failed') {
+      const source=socialContext.providers.list().find(p=>p.accountKey==='astel.us:instagram');
+      const diagnostics=await diagnoseInstagramPublishing({account:source?.account,
+        apiVersion:source?.health?.().apiVersion||DEFAULT_API_VERSION});
+      readiness['astel.us:instagram'].diagnostics=diagnostics;
+      logger.log('Instagram publishing authorization diagnostics',JSON.stringify(diagnostics));
+    }
   }
   async function start() {
     if(!enabled)return {status:'skipped',reason:'CALENDAR_DISABLED'};
