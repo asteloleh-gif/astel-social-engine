@@ -6,7 +6,7 @@ function sanitizeMetaError(error) {
   if (!error || typeof error !== "object" || Array.isArray(error)) return null;
   const redact = value => String(value ?? "")
     .replace(/((?:access_token|app_secret|client_secret|appsecret_proof)=)[^&\s]+/gi, "$1[REDACTED]")
-    .replace(/(Bearer\s+)[A-Za-z0-9._~+/-]+/gi, "$1[REDACTED]")
+    .replace(/(Bearer\s+)[A-Za-z0-9._~+\/-]+/gi, "$1[REDACTED]")
     .slice(0, 500);
   const fields = ["message", "type", "code", "error_subcode", "error_user_title", "error_user_msg", "fbtrace_id"];
   return Object.fromEntries(fields.filter(key => error[key] != null).map(key => [
