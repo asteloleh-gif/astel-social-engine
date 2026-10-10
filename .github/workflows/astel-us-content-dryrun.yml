@@ -41,6 +41,10 @@ jobs:
             CALENDAR_TEST_DATABASE_URL=postgresql://calendar_ci:local_disposable_test_only@127.0.0.1:5432/calendar_test \
             npm test | tee /tmp/astel-test-results.txt
         shell: bash --noprofile --norc -eo pipefail {0}
+      - name: Build deployable Docker image and verify isolated runtime
+        run: |
+          docker build -t astel-calendar-ci .
+          docker run --rm --network none astel-calendar-ci node -e "const a=require('node:assert/strict');a.equal(process.version,'v24.20.0');const r=require('./server-meta-runtime');a.equal(r.publicationCalendar.health().enabled,false);console.log('Docker runtime verified; no credentials or network')"
       - name: Source and dependency test bundle (no credentials or git config)
         if: always()
         run: |
