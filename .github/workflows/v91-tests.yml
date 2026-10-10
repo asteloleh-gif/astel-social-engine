@@ -2,7 +2,7 @@ name: v9.1 tests
 
 on:
   push:
-    branches: ["v9.1", "main", "ru-bot"]
+    branches: ["v9.1", "main", "ru-bot", "fix/social-engine-publish-audit-20261010-ru"]
   pull_request:
     branches: ["main", "ru-bot"]
 
