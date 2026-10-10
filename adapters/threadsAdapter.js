@@ -93,9 +93,9 @@ function createThreadsAdapter({ accessToken, userId }) {
   async function createReply(parentCommentId, message) {
     const token = getAccessToken();
     if (!token || !userId) { console.error("Threads config error: access token or user id missing"); return null; }
-    const createParams = new URLSearchParams({ media_type: "TEXT", text: message, reply_to_id: String(parentCommentId), access_token: token });
+    const createParams = new URLSearchParams({ media_type: "TEXT", text: message, reply_to_id: String(parentCommentId) });
     let createRes;
-    try { createRes = await fetchWithRetry(`https://graph.threads.net/v1.0/me/threads?${createParams}`, { method: "POST" }); }
+    try { createRes = await fetchWithRetry(`https://graph.threads.net/v1.0/me/threads?${createParams}`, { method: "POST", headers: { Authorization: `Bearer ${token}` } }); }
     catch (e) { console.error("Threads container creation network error:", e?.message || String(e)); return null; }
     let createData; try { createData = await createRes.json(); } catch (_) { console.error("Threads container creation error: unparseable response", createRes.status); return null; }
     if (!createRes.ok || createData.error) { console.error("Threads container creation error:", createRes.status, createData?.error?.code || "unknown_error"); return null; }
