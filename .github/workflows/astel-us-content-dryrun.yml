@@ -1,0 +1,51 @@
+name: Astel US Content Dry-Run Gate
+
+on:
+  push:
+    branches:
+      - feat/astel-us-content-dryrun-20261010
+  pull_request:
+    branches:
+      - main
+
+permissions:
+  contents: read
+
+jobs:
+  isolated-content-e2e:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    env:
+      CONTENT_PIPELINE_ENABLED: "true"
+      CONTENT_CONTROL_API_ENABLED: "false"
+      PUBLISH_ENGINE_ENABLED: "true"
+      PUBLISH_ENGINE_DRY_RUN: "true"
+      CONTENT_ALLOW_LIVE_SCHEDULING: "false"
+      BOT_ENABLED: "false"
+      INSTAGRAM_ENABLED: "false"
+      FACEBOOK_ENABLED: "false"
+      THREADS_ACCESS_TOKEN: ""
+      INSTAGRAM_ACCESS_TOKEN: ""
+      OPENAI_API_KEY: ""
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24.20.0
+          cache: npm
+      - run: npm ci --ignore-scripts --no-audit --no-fund
+      - name: Test Content Pipeline with in-memory boundaries only
+        run: |
+          node --test \
+            tests/contentControl.test.js \
+            tests/contentControl5E.test.js \
+            tests/contentE2E.test.js \
+            tests/contentPipeline.test.js \
+            tests/contentRuntime.test.js \
+            tests/publishEngine.test.js
+      - name: Assert production flags were not modified
+        run: |
+          test "$PUBLISH_ENGINE_DRY_RUN" = "true"
+          test "$CONTENT_ALLOW_LIVE_SCHEDULING" = "false"
+          test -z "$THREADS_ACCESS_TOKEN"
+          test -z "$INSTAGRAM_ACCESS_TOKEN"
