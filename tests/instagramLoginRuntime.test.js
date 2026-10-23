@@ -39,3 +39,12 @@ test('RU runtime wraps the original full Meta/Threads startup and exports its ha
   `],{cwd:require('node:path').resolve(__dirname,'..'),env:{PATH:process.env.PATH,NODE_ENV:'test'},encoding:'utf8'});
   assert.equal(result.status,0,result.stderr);
 });
+
+test('Instagram Login flat webhook entries preserve owner filtering and comment identity', () => {
+  const {createInstagramAdapter}=require('../adapters/instagramAdapter');
+  const adapter=createInstagramAdapter({userId:'ig-ru',accountKey:'astel.u:instagram',authMode:'instagram_login'});
+  const event={field:'comments',value:{id:'comment-1',text:'Hello',from:{id:'visitor'},media:{id:'media-1'}}};
+  const events=adapter.parseWebhook({object:'instagram',entry:[{id:'wrong-owner',...event},{id:'ig-ru',...event}]});
+  assert.equal(events.length,1);assert.equal(events[0].sourceId,'comment-1');
+  assert.equal(events[0].accountKey,'astel.u:instagram');assert.equal(events[0].rootId,'media-1');
+});
