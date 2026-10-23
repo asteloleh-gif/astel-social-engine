@@ -361,3 +361,12 @@ Never put access tokens, secrets, passwords, private connection strings, or othe
 **Changed services:** New isolated empty US project only at this checkpoint. No existing service config/Meta settings changed; no tokens copied.
 
 **External blockers:** Astel app secret, Page/IG token grants/validity/expiry and OpenAI/brand knowledge configuration must be securely provisioned. No app webhooks currently subscribed. Real inbound dry-run and first approved replies pending. Privacy policy/category/icon, App Review and business legal verification remain incomplete. IG/FB publishing and insights providers remain unsupported.
+
+
+## RU Instagram comments polling — 2026-10-23
+
+Branch fix/ru-instagram-comments-20261023 is based strictly on deployed ru-bot SHA 83b64f766f7996e82ed46b3de7e7f40c135b324d. Reuses the existing main/Leo Instagram polling and Redis store implementation, without US calendar or Facebook automation. Adds explicit Instagram Login host selection, identity/media/comment reads, polling event normalization, and a thin runtime wrapper around the complete original server-meta startup. Facebook Graph remains the adapter default for existing unspecified flows; RU rollout must set INSTAGRAM_AUTH_MODE=instagram_login.
+
+Original Threads provider and PR75 regression tests are unchanged. Signature verification, safety limits, durable gates and account knowledge context are unchanged. First polling cycle primes prior comments without replying. Publication/calendar engines remain governed by existing disabled settings.
+
+215 isolated tests passed locally on Node20.14.0/npm10.7.0, including shared priming/dedupe/read-failure tests and new account host/identity and full-runtime delegation regressions. Exact Node24.20.0/npm11.19.0 CI remains required before rollout. No production credentials in tests. Rollback baseline is 83b64f766f7996e82ed46b3de7e7f40c135b324d / deployment a11d9ce1-e37a-404a-b15a-eb026e5a390c.

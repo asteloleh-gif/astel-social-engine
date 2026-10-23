@@ -15,6 +15,7 @@ function createInstagramProvider({
   const adapter = adapterFactory({
     accessToken: account.accessToken,
     userId: account.userId,
+    authMode: account.authMode || undefined,
     accountKey: account.key,
     apiVersion,
     baseUrl,
@@ -47,6 +48,7 @@ function createInstagramProvider({
         enabled: account.enabled,
         dryRun: account.dryRun,
         apiVersion: adapter.config?.apiVersion || null,
+        authMode: adapter.config?.authMode || null,
       };
     },
   };
