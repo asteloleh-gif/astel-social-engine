@@ -12,7 +12,7 @@ function response(status, data) {
 
 test("Instagram polling media read uses bearer auth and comments_count", async () => {
   const calls = [];
-  const adapter = createInstagramAdapter({
+  const adapter = createInstagramAdapter({ authMode: "instagram_login",
     accessToken: "secret-token",
     userId: "ig-1",
     accountKey: "a:instagram",
@@ -32,7 +32,7 @@ test("Instagram polling media read uses bearer auth and comments_count", async (
 });
 
 test("Instagram polling comment read flattens replies and preserves media root", async () => {
-  const adapter = createInstagramAdapter({
+  const adapter = createInstagramAdapter({ authMode: "instagram_login",
     accessToken: "token",
     userId: "ig-1",
     accountKey: "a:instagram",
@@ -63,7 +63,7 @@ test("Instagram polling comment read flattens replies and preserves media root",
 });
 
 test("Instagram polling read failures are safe and token-free", async () => {
-  const adapter = createInstagramAdapter({
+  const adapter = createInstagramAdapter({ authMode: "instagram_login",
     accessToken: "secret-token",
     userId: "ig-1",
     accountKey: "a:instagram",
