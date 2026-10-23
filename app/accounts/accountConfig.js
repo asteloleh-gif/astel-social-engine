@@ -35,6 +35,8 @@ function createAccountConfig(input = {}) {
     username,
     accessToken: normalize(input.accessToken) || null,
     verifyToken: normalize(input.verifyToken) || null,
+    ...(input.authMode ? { authMode: normalize(input.authMode).toLowerCase() } : {}),
+    ...(input.linkedPageAccessToken ? { linkedPageAccessToken: normalize(input.linkedPageAccessToken) } : {}),
     enabled: input.enabled !== false,
     dryRun: input.dryRun !== false,
   });
@@ -72,6 +74,10 @@ function optionalPlatformAccount(env, platform) {
     brand: env[`${prefix}_BRAND`] || fallbackBrand,
     platform,
     language: env[`${prefix}_LANGUAGE`] || env.SOCIAL_LANGUAGE || "auto",
+    authMode: env[`${prefix}_AUTH_MODE`],
+    linkedPageAccessToken: platform === "instagram"
+      ? (env.INSTAGRAM_FACEBOOK_PAGE_ACCESS_TOKEN || env.FACEBOOK_ACCESS_TOKEN)
+      : null,
     userId: env[`${prefix}_USER_ID`],
     username,
     accessToken: env[`${prefix}_ACCESS_TOKEN`],

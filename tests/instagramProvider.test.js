@@ -42,7 +42,7 @@ test("normalized social event is immutable and account scoped", () => {
 });
 
 test("Instagram webhook parser emits normalized top-level comment event", () => {
-  const adapter = createInstagramAdapter({
+  const adapter = createInstagramAdapter({ authMode: "instagram_login",
     accessToken: "token",
     userId: "ig-1",
     accountKey: "astel-u:instagram",
@@ -80,7 +80,7 @@ test("Instagram webhook parser emits normalized top-level comment event", () => 
 });
 
 test("Instagram webhook parser preserves parent comment and supports live comments", () => {
-  const adapter = createInstagramAdapter({ accessToken: "token", userId: "ig-1", accountKey: "a:instagram" });
+  const adapter = createInstagramAdapter({ authMode: "instagram_login", accessToken: "token", userId: "ig-1", accountKey: "a:instagram" });
   const [event] = adapter.parseWebhook({
     object: "instagram",
     entry: [{ id: "ig-1", changes: [{ field: "live_comments", value: {
@@ -92,7 +92,7 @@ test("Instagram webhook parser preserves parent comment and supports live commen
 });
 
 test("Instagram webhook parser ignores another account and unrelated fields", () => {
-  const adapter = createInstagramAdapter({ accessToken: "token", userId: "ig-1", accountKey: "a:instagram" });
+  const adapter = createInstagramAdapter({ authMode: "instagram_login", accessToken: "token", userId: "ig-1", accountKey: "a:instagram" });
   assert.deepEqual(adapter.parseWebhook({ object: "instagram", entry: [{ id: "ig-2", changes: [{ field: "comments", value: { id: "c" } }] }] }), []);
   assert.deepEqual(adapter.parseWebhook({ object: "instagram", entry: [{ id: "ig-1", changes: [{ field: "messages", value: { id: "m" } }] }] }), []);
   assert.deepEqual(adapter.parseWebhook({ object: "page", entry: [{ id: "ig-1", changes: [{ field: "comments", value: { id: "c" } }] }] }), []);
@@ -100,7 +100,7 @@ test("Instagram webhook parser ignores another account and unrelated fields", ()
 
 test("Instagram reply publishes once with bearer auth and no token in URL", async () => {
   const calls = [];
-  const adapter = createInstagramAdapter({
+  const adapter = createInstagramAdapter({ authMode: "instagram_login",
     accessToken: "secret-token",
     userId: "ig-1",
     accountKey: "a:instagram",
@@ -119,7 +119,7 @@ test("Instagram reply publishes once with bearer auth and no token in URL", asyn
 });
 
 test("Instagram reply fails closed on deterministic Meta rejection", async () => {
-  const adapter = createInstagramAdapter({
+  const adapter = createInstagramAdapter({ authMode: "instagram_login",
     accessToken: "token", userId: "ig-1", accountKey: "a:instagram",
     fetchImpl: async () => response(400, { error: { code: 10, message: "permission denied" } }),
   });
@@ -128,7 +128,7 @@ test("Instagram reply fails closed on deterministic Meta rejection", async () =>
 
 test("Instagram reply never retries an ambiguous mutation outcome", async () => {
   let networkCalls = 0;
-  const networkAdapter = createInstagramAdapter({
+  const networkAdapter = createInstagramAdapter({ authMode: "instagram_login",
     accessToken: "token", userId: "ig-1", accountKey: "a:instagram",
     fetchImpl: async () => { networkCalls += 1; throw new Error("timeout"); },
   });
@@ -136,7 +136,7 @@ test("Instagram reply never retries an ambiguous mutation outcome", async () => 
   assert.equal(networkCalls, 1);
 
   let serverCalls = 0;
-  const serverAdapter = createInstagramAdapter({
+  const serverAdapter = createInstagramAdapter({ authMode: "instagram_login",
     accessToken: "token", userId: "ig-1", accountKey: "a:instagram",
     fetchImpl: async () => { serverCalls += 1; return response(503, { error: { code: 2 } }); },
   });
